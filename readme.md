@@ -51,6 +51,12 @@ Las especificaciones detalladas del diseño y arquitectura se encuentran en la r
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone https://github.com/tu-usuario/tu-repositorio.git
+   git clone https://github.com/Copyrighter22/Mod3-Project_TavernBoard.git
+   cd Mod3-Project_TavernBoard
+   ```
+   or
+   ```bash
+   fork  this project
+   git clone https://github.com/your-user/your-repository.git
    cd tu-repositorio
    ```
