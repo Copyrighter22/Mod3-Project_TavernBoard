@@ -12,7 +12,6 @@ const postSchema = new mongoose.Schema(
     tavern: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Tavern",
-      required: true,
     },
     upvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
