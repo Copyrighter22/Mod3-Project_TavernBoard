@@ -1,14 +1,16 @@
-import { useContext } from "react";
+import { useState, useContext } from "react";
 import { AuthContext } from "../../context/AuthContext.js";
+import CommentSection from "./CommentSection";
 
-const PostCard = ({ post, onLike, onDelete }) => {
+const PostCard = ({ post, onLike, onDelete, tavernOwnerId }) => {
   const { user } = useContext(AuthContext);
+  const [showComments, setShowComments] = useState(false);
 
-  const isAuthor =
-    user && (user._id === post.author?._id || user._id === post.author);
-
-  // 1. Cambiado de post.likes a post.upvotes
-  const hasLiked = user && post.upvotes?.includes(user._id);
+  // Permiso para borrar el post: Autor del post O Dueño de la taberna
+  const isPostAuthor =
+    user && (post.author?._id === user._id || post.author === user._id);
+  const isTavernAdmin = user && tavernOwnerId && user._id === tavernOwnerId;
+  const canDeletePost = isPostAuthor || isTavernAdmin;
 
   return (
     <div
@@ -17,73 +19,64 @@ const PostCard = ({ post, onLike, onDelete }) => {
         borderRadius: "8px",
         padding: "1rem",
         marginBottom: "1rem",
-        backgroundColor: "#1a1a1a",
-        color: "#fff", // 2. Color blanco general para asegurar legibilidad
+        backgroundColor: "#111",
+        color: "#fff",
         textAlign: "left",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "0.5rem",
-        }}
-      >
-        <strong style={{ color: "#3498db" }}>
-          @{post.author?.username || post.author?.name || "Tabernero"}
-        </strong>
-        <small style={{ color: "#888" }}>
-          {new Date(post.createdAt).toLocaleDateString()}
-        </small>
-      </div>
+      <h3 style={{ margin: "0 0 0.5rem 0", color: "#f39c12" }}>{post.title}</h3>
+      <p style={{ color: "#e0e0e0" }}>{post.content}</p>
 
-      {post.title && (
-        <h3 style={{ margin: "0.5rem 0", color: "#fff" }}>{post.title}</h3>
-      )}
+      <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+        {user && (
+          <button
+            onClick={() => onLike(post._id)}
+            style={{
+              backgroundColor: "#222",
+              color: "#fff",
+              border: "1px solid #444",
+              padding: "0.3rem 0.6rem",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            ❤️ {post.upvotes?.length || 0}
+          </button>
+        )}
 
-      {/* 3. Color claro explícito (#e0e0e0) para ver el cuerpo del mensaje */}
-      <p
-        style={{
-          margin: "0.5rem 0 1rem 0",
-          whiteSpace: "pre-line",
-          color: "#e0e0e0",
-        }}
-      >
-        {post.content}
-      </p>
-
-      <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
         <button
-          onClick={() => onLike(post._id)}
+          onClick={() => setShowComments(!showComments)}
           style={{
-            backgroundColor: hasLiked ? "#ff8a8a" : "#333",
-            color: "#fff",
-            border: "none",
-            padding: "0.4rem 0.8rem",
+            backgroundColor: "transparent",
+            color: "#aaa",
+            border: "1px solid #444",
+            padding: "0.3rem 0.6rem",
             borderRadius: "4px",
             cursor: "pointer",
           }}
         >
-          ❤️ {post.upvotes?.length || 0}
+          💬 Comentarios
         </button>
 
-        {isAuthor && (
+        {/* Solo visible si es el autor del post o el admin de la taberna */}
+        {canDeletePost && (
           <button
             onClick={() => onDelete(post._id)}
             style={{
-              backgroundColor: "transparent",
-              color: "#ff4d4d",
-              border: "1px solid #ff4d4d",
-              padding: "0.4rem 0.8rem",
+              backgroundColor: "#e74c3c",
+              color: "#fff",
+              border: "none",
+              padding: "0.3rem 0.6rem",
               borderRadius: "4px",
               cursor: "pointer",
-              marginLeft: "auto",
             }}
           >
-            Eliminar
+            🗑️ Eliminar
           </button>
         )}
       </div>
+
+      {showComments && <CommentSection postId={post._id} />}
     </div>
   );
 };
