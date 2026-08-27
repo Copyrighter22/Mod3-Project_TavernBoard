@@ -21,9 +21,13 @@ const Navbar = () => {
         backgroundColor: "#242424",
         color: "#fff",
         marginBottom: "2rem",
+        width: "100%",
+        boxSizing: "border-box",
+        gap: "2rem",
       }}
     >
-      <div>
+      {/* Sección Izquierda: Enlaces */}
+      <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
         <Link
           to="/"
           style={{
@@ -40,18 +44,30 @@ const Navbar = () => {
           style={{
             color: "#fff",
             textDecoration: "none",
-            fontWeight: "bold",
-            fontSize: "1.2rem",
+            fontWeight: "500",
+            fontSize: "1rem",
           }}
         >
           Tabernas
         </Link>
+        <Link
+          to="/profile"
+          style={{
+            color: "#fff",
+            textDecoration: "none",
+            fontWeight: "500",
+            fontSize: "1rem",
+          }}
+        >
+          Mi Perfil
+        </Link>
       </div>
 
+      {/* Sección Derecha: Usuario / Sesión */}
       <div>
         {user ? (
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            <span>
+            <span style={{ whiteSpace: "nowrap" }}>
               Hola, <strong>{user.username || user.name}</strong>
             </span>
             <button
@@ -63,6 +79,7 @@ const Navbar = () => {
                 border: "none",
                 backgroundColor: "#e74c3c",
                 color: "#fff",
+                whiteSpace: "nowrap",
               }}
             >
               Cerrar Sesión
