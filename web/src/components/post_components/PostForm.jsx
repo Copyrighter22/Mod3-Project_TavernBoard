@@ -40,17 +40,6 @@ const PostForm = ({ onPostCreated }) => {
       </div>
 
       <div style={{ marginBottom: "0.5rem" }}>
-        <input
-          type="text"
-          value={tavern}
-          onChange={(e) => setTavern(e.target.value)}
-          placeholder="ID o Nombre de la Taberna..."
-          style={{ width: "100%", padding: "0.5rem", borderRadius: "4px" }}
-          required
-        />
-      </div>
-
-      <div style={{ marginBottom: "0.5rem" }}>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}

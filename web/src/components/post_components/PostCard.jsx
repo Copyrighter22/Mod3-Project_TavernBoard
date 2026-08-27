@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext.js";
+import { AuthContext } from "../../context/AuthContext.js";
 
 const PostCard = ({ post, onLike, onDelete }) => {
   const { user } = useContext(AuthContext);

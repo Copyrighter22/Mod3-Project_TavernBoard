@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext.jsx';
+import TavernsPage from './pages/TavernPage';
+import TavernDetailPage from './pages/TavernDetailPage';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -23,6 +25,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/taverns" element={<TavernsPage />} />
+          <Route path="/taverns/:id" element={<TavernDetailPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

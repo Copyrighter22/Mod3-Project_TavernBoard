@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // 5. MIDDLEWARES GLOBALES
-app.use(cors()); // Habilita peticiones HTTP desde distintos orígenes (Frontend / Postman)
+app.use(cors()); // Habilita peticiones HTTP desde distintos orígenes
 app.use(express.json()); // Parsea las peticiones con cuerpo JSON en req.body
 
 // 6. ENRUTAMIENTO Y ENDPOINTS DE LA API

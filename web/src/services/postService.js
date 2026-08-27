@@ -19,3 +19,8 @@ export const toggleLike = async (postId) => {
   const response = await API.put(`/posts/${postId}/like`);
   return response.data;
 };
+
+export const getPostsByTavern = async (tavernId) => {
+  const response = await API.get(`/posts/tavern/${tavernId}`);
+  return response.data;
+};

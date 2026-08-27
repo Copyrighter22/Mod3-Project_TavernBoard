@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
-import PostForm from './components/PostForm';
-import PostCard from './components/PostCard';
+import PostForm from './components/post_components/PostForm';
+import PostCard from './components/post_components/PostCard';
 import { getPosts, createPost, deletePost, toggleLike } from './services/postService';
 
 function App() {
