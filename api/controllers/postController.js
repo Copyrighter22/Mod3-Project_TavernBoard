@@ -1,4 +1,5 @@
 const Post = require("../models/Post");
+const Tavern = require("../models/Tavern");
 
 // -----------------------------------------------------------------------------
 // @desc    Obtener todas las publicaciones (Feed general)
@@ -40,20 +41,26 @@ const getPostsByTavern = async (req, res) => {
 // @access  Privado
 // -----------------------------------------------------------------------------
 const createPost = async (req, res) => {
-  const { title, content, tavernId } = req.body;
-
   try {
-    const post = await Post.create({
+    const { title, content, tavern } = req.body;
+
+    const newPost = await Post.create({
       title,
       content,
-      tavern: tavernId || null,
       author: req.user._id,
+      tavern: tavern || null,
     });
 
-    const populatedPost = await post.populate("author", "username avatar name");
+    const populatedPost = await Post.findById(newPost._id).populate(
+      "author",
+      "username name",
+    );
+
     res.status(201).json(populatedPost);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(500)
+      .json({ message: "Error al crear la publicación", error: error.message });
   }
 };
 
@@ -121,10 +128,38 @@ const deletePost = async (req, res) => {
   }
 };
 
+// -----------------------------------------------------------------------------
+// @desc    Obtener publicaciones de las tabernas a las que se ha unido el usuario
+// @route   GET /api/posts/feed
+// @access  Privado
+// -----------------------------------------------------------------------------
+const getJoinedFeed = async (req, res) => {
+  try {
+    // 1. Obtener las IDs de las tabernas donde el usuario es miembro
+    const userTaverns = await Tavern.find({ members: req.user._id }).select(
+      "_id",
+    );
+    const tavernIds = userTaverns.map((t) => t._id);
+
+    // 2. Buscar publicaciones asociadas a esas tabernas
+    const posts = await Post.find({ tavern: { $in: tavernIds } })
+      .populate("author", "username name")
+      .sort({ createdAt: -1 });
+
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({
+      message: "Error al obtener el feed personalizado",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getPosts,
   getPostsByTavern,
   createPost,
   toggleLikePost,
   deletePost,
+  getJoinedFeed,
 };

@@ -1,65 +1,86 @@
 import { useState } from "react";
 
-const PostForm = ({ onPostCreated }) => {
+const PostForm = ({ onPostCreated, tavernId }) => {
   const [title, setTitle] = useState("");
-  const [tavern, setTavern] = useState("");
   const [content, setContent] = useState("");
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim() || !tavern.trim()) return;
+    if (!title.trim() || !content.trim()) return;
 
+    setLoading(true);
     try {
-      await onPostCreated({ title, tavern, content });
+      await onPostCreated({
+        title,
+        content,
+        ...(tavernId && { tavern: tavernId }), // Adjunta el ID de la taberna si existe
+      });
       setTitle("");
-      setTavern("");
       setContent("");
-      setError("");
     } catch (err) {
-      setError(err.response?.data?.message || "Error al publicar");
+      console.error("Error al crear post:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <form
       onSubmit={handleSubmit}
-      style={{ marginBottom: "2rem", textAlign: "left" }}
+      style={{
+        backgroundColor: "#1e1e1e",
+        padding: "1rem",
+        borderRadius: "8px",
+        marginBottom: "1.5rem",
+        border: "1px solid #333",
+      }}
     >
-      {error && <p style={{ color: "red", marginBottom: "0.5rem" }}>{error}</p>}
-
-      <div style={{ marginBottom: "0.5rem" }}>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Título del post..."
-          style={{ width: "100%", padding: "0.5rem", borderRadius: "4px" }}
-          required
-        />
-      </div>
-
-      <div style={{ marginBottom: "0.5rem" }}>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="¿Qué aventura quieres compartir hoy?"
-          rows="3"
-          style={{
-            width: "100%",
-            padding: "0.8rem",
-            borderRadius: "6px",
-            resize: "vertical",
-          }}
-          required
-        />
-      </div>
-
+      <input
+        type="text"
+        placeholder="Título del post..."
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "0.5rem",
+          marginBottom: "0.5rem",
+          backgroundColor: "#111",
+          border: "1px solid #444",
+          borderRadius: "4px",
+          color: "#fff",
+          boxSizing: "border-box",
+        }}
+      />
+      <textarea
+        placeholder="¿Qué aventura quieres compartir hoy?"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        rows={3}
+        style={{
+          width: "100%",
+          padding: "0.5rem",
+          marginBottom: "0.5rem",
+          backgroundColor: "#111",
+          border: "1px solid #444",
+          borderRadius: "4px",
+          color: "#fff",
+          boxSizing: "border-box",
+        }}
+      />
       <button
         type="submit"
-        style={{ padding: "0.5rem 1rem", cursor: "pointer" }}
+        disabled={loading}
+        style={{
+          backgroundColor: "#f39c12",
+          color: "#fff",
+          border: "none",
+          padding: "0.5rem 1rem",
+          borderRadius: "4px",
+          cursor: "pointer",
+        }}
       >
-        Publicar
+        {loading ? "Publicando..." : "Publicar"}
       </button>
     </form>
   );

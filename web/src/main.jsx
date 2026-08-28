@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import App from "./App";
+import HomePage from "./pages/HomePage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -20,7 +20,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             path="/"
             element={
               <ProtectedRoute>
-                <App />
+                <HomePage />
               </ProtectedRoute>
             }
           />

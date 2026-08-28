@@ -1,15 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { getTavernById, toggleJoinTavern } from "../services/tavernService";
-import {
-  getPostsByTavern,
-  createPost,
-  toggleLike,
-  deletePost,
-} from "../services/postService";
 import Navbar from "../components/Navbar";
 import PostForm from "../components/post_components/PostForm";
 import PostCard from "../components/post_components/PostCard";
+import { getTavernById } from "../services/tavernService";
+import { createPost, toggleLike, deletePost } from "../services/postService";
 
 const TavernDetailPage = () => {
   const { id } = useParams();
@@ -17,33 +12,49 @@ const TavernDetailPage = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Cargar datos de la taberna y sus publicaciones
+  // Función de refresco manual para llamar tras eventos (como crear post)
+  const refreshTavernDetails = async () => {
+    try {
+      const data = await getTavernById(id);
+      setTavern(data.tavern || data);
+      setPosts(data.posts || []);
+    } catch (err) {
+      console.error("Error al refrescar la taberna:", err);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
+    let isMounted = true;
+
+    const loadInitialTavernDetails = async () => {
       try {
-        const tavernData = await getTavernById(id);
-        const postsData = await getPostsByTavern(id);
-        setTavern(tavernData);
-        setPosts(postsData);
+        const data = await getTavernById(id);
+        if (isMounted) {
+          setTavern(data.tavern || data);
+          setPosts(data.posts || []);
+        }
       } catch (err) {
         console.error("Error al cargar la taberna:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
-    fetchData();
+    loadInitialTavernDetails();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
-  // Crear post inyectando automáticamente la ID de esta taberna
-  const handleCreatePost = async (postData) => {
-    const newPost = await createPost({ ...postData, tavernId: id });
-    setPosts([newPost, ...posts]);
+  const handlePostCreated = async (newPostData) => {
+    await createPost(newPostData);
+    refreshTavernDetails();
   };
 
   const handleLike = async (postId) => {
-    const updatedPost = await toggleLike(postId);
-    setPosts(posts.map((p) => (p._id === postId ? updatedPost : p)));
+    const updated = await toggleLike(postId);
+    setPosts(posts.map((p) => (p._id === postId ? updated : p)));
   };
 
   const handleDelete = async (postId) => {
@@ -51,85 +62,52 @@ const TavernDetailPage = () => {
     setPosts(posts.filter((p) => p._id !== postId));
   };
 
-  const handleToggleJoin = async () => {
-    const updatedTavern = await toggleJoinTavern(id);
-    setTavern(updatedTavern);
-  };
-
-  if (loading) {
+  if (loading)
     return (
       <>
         <Navbar />
-        <p style={{ color: "#fff", textAlign: "center", marginTop: "2rem" }}>
-          Cargando taberna...
-        </p>
+        <p style={{ color: "#fff", textAlign: "center" }}>Cargando...</p>
       </>
     );
-  }
 
-  if (!tavern) {
+  if (!tavern)
     return (
       <>
         <Navbar />
-        <p style={{ color: "#fff", textAlign: "center", marginTop: "2rem" }}>
-          Taberna no encontrada
+        <p style={{ color: "#fff", textAlign: "center" }}>
+          Taberna no encontrada.
         </p>
       </>
     );
-  }
 
   return (
     <>
       <Navbar />
       <div style={{ maxWidth: "800px", margin: "0 auto", padding: "1rem" }}>
-        {/* Cabecera de la Taberna */}
         <div
           style={{
-            backgroundColor: "#222",
+            backgroundColor: "#1e1e1e",
             padding: "1.5rem",
             borderRadius: "8px",
             marginBottom: "2rem",
-            textAlign: "left",
-            border: "1px solid #444",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              justify: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <h1 style={{ color: "#f39c12", margin: 0 }}>{tavern.name}</h1>
-            <button
-              onClick={handleToggleJoin}
-              style={{
-                padding: "0.5rem 1rem",
-                backgroundColor: "#3498db",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Unirse / Salir ({tavern.members?.length || 0})
-            </button>
-          </div>
-          <p style={{ color: "#ccc", marginTop: "0.8rem" }}>
-            {tavern.description}
-          </p>
+          <h1 style={{ color: "#f39c12", margin: 0 }}>🏰 {tavern.name}</h1>
+          <p style={{ color: "#ccc" }}>{tavern.description}</p>
+          <span style={{ color: "#aaa" }}>
+            👥 {tavern.members?.length || 0} miembros
+          </span>
         </div>
 
-        {/* Formulario de publicación asignado automáticamente a esta taberna */}
-        <PostForm onPostCreated={handleCreatePost} />
+        {/* Incluimos tavernId para asociar el post a la taberna */}
+        <PostForm onPostCreated={handlePostCreated} tavernId={id} />
 
-        {/* Listado de Posts de esta taberna */}
-        <h2 style={{ color: "#fff", textAlign: "left", marginBottom: "1rem" }}>
-          Tablón de Anuncios
+        <h2 style={{ color: "#fff", textAlign: "left" }}>
+          Publicaciones de la taberna
         </h2>
         {posts.length === 0 ? (
-          <p style={{ color: "#888", textAlign: "left" }}>
-            Aún no hay publicaciones en esta taberna.
+          <p style={{ color: "#888" }}>
+            No hay publicaciones en esta taberna todavía.
           </p>
         ) : (
           posts.map((post) => (
@@ -138,6 +116,7 @@ const TavernDetailPage = () => {
               post={post}
               onLike={handleLike}
               onDelete={handleDelete}
+              tavernOwnerId={tavern.owner?._id || tavern.owner}
             />
           ))
         )}

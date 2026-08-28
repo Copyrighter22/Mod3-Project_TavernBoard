@@ -10,6 +10,7 @@ const authRoutes = require("./routes/authRoutes");
 const tavernRoutes = require("./routes/tavernRoutes");
 const postRoutes = require("./routes/postRoutes");
 const commentRoutes = require("./routes/commentRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 // 2. CONFIGURACIÓN DE RED Y DNS (Forzar el uso de servidores DNS públicos (Google y Cloudflare) para resolver consultas SRV de MongoDB Atlas)
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
@@ -31,6 +32,7 @@ app.use("/api/auth", authRoutes); // Maneja registro y login (/api/auth/register
 app.use("/api/taverns", tavernRoutes); // Maneja lectura y creación de tabernas (/api/taverns)
 app.use("/api/posts", postRoutes); // Maneja publicaciones por taberna (/api/posts)
 app.use("/api/comments", commentRoutes); // Maneja lectura, creación y borrado de comentarios (/api/comments)
+app.use("/api/users", userRoutes); // Maneja datos e información de usuarios (/api/users/me)
 
 // 7. RUTA DE VERIFICACIÓN (HEALTH CHECK)
 app.get("/api/health", (req, res) => {

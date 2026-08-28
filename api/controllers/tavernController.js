@@ -1,4 +1,5 @@
 const Tavern = require("../models/Tavern");
+const Post = require("../models/Post");
 
 // -----------------------------------------------------------------------------
 // @desc    Obtener todas las tabernas
@@ -18,7 +19,7 @@ const getTaverns = async (req, res) => {
 };
 
 // -----------------------------------------------------------------------------
-// @desc    Obtener detalle de una taberna por ID
+// @desc    Obtener detalle de una taberna por ID y sus publicaciones
 // @route   GET /api/taverns/:id
 // @access  Público
 // -----------------------------------------------------------------------------
@@ -32,7 +33,13 @@ const getTavernById = async (req, res) => {
       return res.status(404).json({ message: "Taberna no encontrada" });
     }
 
-    res.json(tavern);
+    // Buscar las publicaciones asociadas a esta taberna
+    const posts = await Post.find({ tavern: req.params.id })
+      .populate("author", "username avatar name")
+      .sort({ createdAt: -1 });
+
+    // Devolver objeto con la taberna y sus publicaciones
+    res.json({ tavern, posts });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

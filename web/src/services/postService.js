@@ -24,3 +24,8 @@ export const getPostsByTavern = async (tavernId) => {
   const response = await API.get(`/posts/tavern/${tavernId}`);
   return response.data;
 };
+
+export const getJoinedPosts = async () => {
+  const response = await API.get("/posts/feed");
+  return response.data;
+};
