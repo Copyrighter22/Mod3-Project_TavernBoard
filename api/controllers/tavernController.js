@@ -46,12 +46,12 @@ const getTavernById = async (req, res) => {
 };
 
 // -----------------------------------------------------------------------------
-// @desc    Crear una nueva taberna
+// @desc    Crear una nueva taberna (con opción de subir image y banner)
 // @route   POST /api/taverns
 // @access  Privado
 // -----------------------------------------------------------------------------
 const createTavern = async (req, res) => {
-  const { name, description, image } = req.body;
+  const { name, description } = req.body;
 
   try {
     // Comprobar si ya existe una taberna con el mismo nombre
@@ -62,10 +62,19 @@ const createTavern = async (req, res) => {
         .json({ message: "Ya existe una taberna con ese nombre" });
     }
 
+    // Obtener la URL devuelta por Cloudinary para cada campo (si se han subido archivos)
+    const image = req.files?.image
+      ? req.files.image[0].path
+      : req.body.image || "";
+    const banner = req.files?.banner
+      ? req.files.banner[0].path
+      : req.body.banner || "";
+
     const tavern = await Tavern.create({
       name,
       description,
-      image: image || "",
+      image,
+      banner,
       owner: req.user._id,
       members: [req.user._id], // El creador se añade automáticamente como miembro
     });

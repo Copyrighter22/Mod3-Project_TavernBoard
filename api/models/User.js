@@ -12,7 +12,11 @@ const userSchema = new mongoose.Schema(
     },
     password: { type: String, required: true },
     bio: { type: String, default: "" },
-    avatar: { type: String, default: "" },
+    avatar: {
+      type: String,
+      default:
+        "https://res.cloudinary.com/kro9urjy/image/upload/v1785263289/samples/chair.png",
+    },
   },
   { timestamps: true },
 );
