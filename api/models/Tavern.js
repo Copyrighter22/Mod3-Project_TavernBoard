@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 
+// -----------------------------------------------------------------------------
+// @desc    Esquema de Mongoose para la entidad Taberna (Comunidad)
+// -----------------------------------------------------------------------------
 const tavernSchema = new mongoose.Schema(
   {
     name: {
@@ -33,7 +36,25 @@ const tavernSchema = new mongoose.Schema(
       default: "",
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      versionKey: false,
+      transform: (doc, ret) => {
+        delete ret._id;
+        delete ret.__v;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      versionKey: false,
+      transform: (doc, ret) => {
+        delete ret._id;
+        delete ret.__v;
+      },
+    },
+  },
 );
 
 module.exports = mongoose.model("Tavern", tavernSchema);

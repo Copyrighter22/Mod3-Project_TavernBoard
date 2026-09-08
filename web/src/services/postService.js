@@ -1,3 +1,6 @@
+// -----------------------------------------------------------------------------
+// SERVICIOS PARA LA GESTIÓN DE PUBLICACIONES Y LIKES
+// -----------------------------------------------------------------------------
 import API from "./api";
 
 export const getPosts = async () => {

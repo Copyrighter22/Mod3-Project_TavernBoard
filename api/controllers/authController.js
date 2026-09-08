@@ -2,8 +2,9 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// FUNCIÓN AUXILIAR: Genera un token JWT incluyendo solo el ID del usuario como carga útil (payload).
-// Se firma con la clave secreta del .env y expira en 30 días.
+// -----------------------------------------------------------------------------
+// @desc    Generar un token JWT con el ID del usuario (válido por 30 días)
+// -----------------------------------------------------------------------------
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
@@ -27,10 +28,14 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
     });
+
     res.status(201).json({
-      _id: user.id,
-      username: user.username,
-      email: user.email,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar || "",
+      },
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -49,9 +54,12 @@ const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (user && (await bcrypt.compare(password, user.password))) {
       res.json({
-        _id: user.id,
-        username: user.username,
-        email: user.email,
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          avatar: user.avatar || "",
+        },
         token: generateToken(user._id),
       });
     } else {

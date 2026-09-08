@@ -1,24 +1,34 @@
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const config = require("../config/config");
 
-// 1. Configuración de credenciales
+// -----------------------------------------------------------------------------
+// Configuración de credenciales de Cloudinary mediante Convict
+// -----------------------------------------------------------------------------
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: config.get("cloudinary.cloudName"),
+  api_key: config.get("cloudinary.apiKey"),
+  api_secret: config.get("cloudinary.apiSecret"),
+  timeout: 60000,
 });
 
-// 2. Configuración del almacenamiento en Cloudinary
+// -----------------------------------------------------------------------------
+// Configuración del almacenamiento en Cloudinary
+// -----------------------------------------------------------------------------
 const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "tavern_board", // Nombre de la carpeta que se creará en Cloudinary
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: "tavern_board",
+      allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    };
   },
 });
 
-// 3. Crear middleware
+// -----------------------------------------------------------------------------
+// Middleware de subida de archivos con Multer
+// -----------------------------------------------------------------------------
 const upload = multer({ storage });
 
 module.exports = upload;

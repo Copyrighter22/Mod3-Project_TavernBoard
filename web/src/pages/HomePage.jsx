@@ -1,132 +1,108 @@
+// -----------------------------------------------------------------------------
+// PÁGINA PRINCIPAL / FEED GENERAL DE PUBLICACIONES
+// -----------------------------------------------------------------------------
 import { useState, useEffect, useContext } from "react";
-import { AuthContext } from "../context/AuthContext.js";
-import {
-  getPosts,
-  getJoinedPosts,
-  toggleLike,
-  deletePost,
-} from "../services/postService";
-import Navbar from "../components/Navbar";
-import PostCard from "../components/post_components/PostCard";
+import { AuthContext } from "../context/AuthContext";
+import API from "../services/api";
 import PostForm from "../components/post_components/PostForm";
+import PostCard from "../components/post_components/PostCard";
 
-const HomePage = () => {
-  const { user } = useContext(AuthContext);
+export default function HomePage() {
   const [posts, setPosts] = useState([]);
-  const [filter, setFilter] = useState("all"); // 'all' | 'joined'
   const [loading, setLoading] = useState(true);
-
-  // Función para re-obtener publicaciones tras crear un post
-  const refreshPosts = async () => {
-    try {
-      const data =
-        filter === "joined" ? await getJoinedPosts() : await getPosts();
-      setPosts(data);
-    } catch (err) {
-      console.error("Error al recargar publicaciones:", err);
-    }
-  };
+  const [filter, setFilter] = useState("all");
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadPosts = async () => {
+    const fetchPosts = async () => {
       try {
-        const data =
-          filter === "joined" ? await getJoinedPosts() : await getPosts();
-        if (isMounted) setPosts(data);
+        setLoading(true);
+        const endpoint =
+          filter === "my-taverns" ? "/posts/my-taverns" : "/posts";
+        const res = await API.get(endpoint);
+        setPosts(res.data);
       } catch (err) {
-        console.error("Error al cargar publicaciones:", err);
+        console.error("Error al obtener los posts:", err);
       } finally {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
     };
 
-    loadPosts();
-
-    return () => {
-      isMounted = false;
-    };
+    fetchPosts();
   }, [filter]);
 
-  const handleFilterChange = (newFilter) => {
-    if (filter !== newFilter) {
-      setLoading(true);
-      setFilter(newFilter);
-    }
+  const handlePostCreated = (newPost) => {
+    setPosts((prevPosts) => [newPost, ...prevPosts]);
   };
 
-  const handleLike = async (postId) => {
-    const updated = await toggleLike(postId);
-    setPosts(posts.map((p) => (p._id === postId ? updated : p)));
+  const handlePostDeleted = (deletedId) => {
+    setPosts((prevPosts) =>
+      prevPosts.filter((p) => (p.id || p._id) !== deletedId),
+    );
   };
 
-  const handleDelete = async (postId) => {
-    await deletePost(postId);
-    setPosts(posts.filter((p) => p._id !== postId));
+  const handleLikeSuccess = (updatedPost) => {
+    const targetId = updatedPost.id || updatedPost._id;
+    setPosts((prevPosts) =>
+      prevPosts.map((p) => ((p.id || p._id) === targetId ? updatedPost : p)),
+    );
   };
 
   return (
-    <>
-      <Navbar />
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "1rem" }}>
-        <PostForm onPostCreated={refreshPosts} />
-
-        {/* Pestañas de filtrado */}
-        <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}>
-          <button
-            onClick={() => handleFilterChange("all")}
-            style={{
-              padding: "0.5rem 1rem",
-              backgroundColor: filter === "all" ? "#3498db" : "#222",
-              color: "#fff",
-              border: "1px solid #444",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            🌐 Todos los Posts
-          </button>
-
+    <div className="container-fluid px-3 px-md-4 py-3">
+      <div className="row justify-content-center">
+        <div className="col-12 col-lg-8">
           {user && (
+            <div className="mb-4">
+              <PostForm onPostCreated={handlePostCreated} />
+            </div>
+          )}
+
+          <div className="d-flex gap-2 mb-4">
             <button
-              onClick={() => handleFilterChange("joined")}
-              style={{
-                padding: "0.5rem 1rem",
-                backgroundColor: filter === "joined" ? "#3498db" : "#222",
-                color: "#fff",
-                border: "1px solid #444",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
+              className={`btn btn-sm fw-semibold ${
+                filter === "all" ? "btn-primary" : "btn-outline-primary"
+              }`}
+              onClick={() => setFilter("all")}
             >
-              🛡️ Mis Tabernas
+              <i className="bi bi-globe me-1"></i> Todos los Posts
             </button>
+            {user && (
+              <button
+                className={`btn btn-sm fw-semibold ${
+                  filter === "my-taverns"
+                    ? "btn-primary"
+                    : "btn-outline-primary"
+                }`}
+                onClick={() => setFilter("my-taverns")}
+              >
+                <i className="bi bi-shield-shaded me-1"></i> Mis Tabernas
+              </button>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-warning" role="status"></div>
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="card p-4 text-center text-muted">
+              No hay publicaciones para mostrar en este momento.
+            </div>
+          ) : (
+            <div className="d-flex flex-column gap-3">
+              {posts.map((post) => (
+                <PostCard
+                  key={post.id || post._id}
+                  post={post}
+                  onLikeSuccess={handleLikeSuccess}
+                  onDelete={handlePostDeleted}
+                />
+              ))}
+            </div>
           )}
         </div>
-
-        {/* Listado de publicaciones */}
-        {loading ? (
-          <p style={{ color: "#fff" }}>Cargando publicaciones...</p>
-        ) : posts.length === 0 ? (
-          <p style={{ color: "#888" }}>
-            {filter === "joined"
-              ? "No hay publicaciones en las tabernas a las que te has unido."
-              : "No hay publicaciones disponibles."}
-          </p>
-        ) : (
-          posts.map((post) => (
-            <PostCard
-              key={post._id}
-              post={post}
-              onLike={handleLike}
-              onDelete={handleDelete}
-            />
-          ))
-        )}
       </div>
-    </>
+    </div>
   );
-};
-
-export default HomePage;
+}

@@ -1,3 +1,6 @@
+// -----------------------------------------------------------------------------
+// SERVICIOS PARA LA GESTIÓN DE COMENTARIOS
+// -----------------------------------------------------------------------------
 import API from "./api";
 
 export const getCommentsByPost = async (postId) => {

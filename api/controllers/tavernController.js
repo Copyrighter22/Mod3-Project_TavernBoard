@@ -1,20 +1,22 @@
 const Tavern = require("../models/Tavern");
 const Post = require("../models/Post");
+const config = require("../config/config");
+const createError = require("http-errors");
 
 // -----------------------------------------------------------------------------
 // @desc    Obtener todas las tabernas
 // @route   GET /api/taverns
 // @access  Público
 // -----------------------------------------------------------------------------
-const getTaverns = async (req, res) => {
+const getTaverns = async (req, res, next) => {
   try {
     const taverns = await Tavern.find()
       .populate("owner", "username avatar name")
       .sort({ createdAt: -1 });
 
-    res.json(taverns);
+    res.status(200).json(taverns);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -23,25 +25,23 @@ const getTaverns = async (req, res) => {
 // @route   GET /api/taverns/:id
 // @access  Público
 // -----------------------------------------------------------------------------
-const getTavernById = async (req, res) => {
+const getTavernById = async (req, res, next) => {
   try {
     const tavern = await Tavern.findById(req.params.id)
       .populate("owner", "username avatar name")
       .populate("members", "username avatar name");
 
     if (!tavern) {
-      return res.status(404).json({ message: "Taberna no encontrada" });
+      return next(createError(404, "Taberna no encontrada"));
     }
 
-    // Buscar las publicaciones asociadas a esta taberna
     const posts = await Post.find({ tavern: req.params.id })
       .populate("author", "username avatar name")
       .sort({ createdAt: -1 });
 
-    // Devolver objeto con la taberna y sus publicaciones
-    res.json({ tavern, posts });
+    res.status(200).json({ tavern, posts });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -50,33 +50,35 @@ const getTavernById = async (req, res) => {
 // @route   POST /api/taverns
 // @access  Privado
 // -----------------------------------------------------------------------------
-const createTavern = async (req, res) => {
+const createTavern = async (req, res, next) => {
   const { name, description } = req.body;
 
   try {
-    // Comprobar si ya existe una taberna con el mismo nombre
-    const existingTavern = await Tavern.findOne({ name });
-    if (existingTavern) {
-      return res
-        .status(400)
-        .json({ message: "Ya existe una taberna con ese nombre" });
+    if (!name || !description) {
+      return next(createError(400, "Nombre y descripción son obligatorios"));
     }
 
-    // Obtener la URL devuelta por Cloudinary para cada campo (si se han subido archivos)
+    const existingTavern = await Tavern.findOne({ name });
+    if (existingTavern) {
+      return next(createError(400, "Ya existe una taberna con ese nombre"));
+    }
+
+    // Usar la URL de Cloudinary, la URL del body o el fallback desde Convict
     const image = req.files?.image
       ? req.files.image[0].path
-      : req.body.image || "";
+      : req.body.image || config.get("defaults.tavernIcon");
+
     const banner = req.files?.banner
       ? req.files.banner[0].path
-      : req.body.banner || "";
+      : req.body.banner || config.get("defaults.tavernBanner");
 
     const tavern = await Tavern.create({
       name,
       description,
       image,
       banner,
-      owner: req.user._id,
-      members: [req.user._id], // El creador se añade automáticamente como miembro
+      owner: req.user.id,
+      members: [req.user.id],
     });
 
     const populatedTavern = await tavern.populate(
@@ -85,7 +87,7 @@ const createTavern = async (req, res) => {
     );
     res.status(201).json(populatedTavern);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -94,35 +96,33 @@ const createTavern = async (req, res) => {
 // @route   PUT /api/taverns/:id/join
 // @access  Privado
 // -----------------------------------------------------------------------------
-const toggleJoinTavern = async (req, res) => {
+const toggleJoinTavern = async (req, res, next) => {
   try {
     const tavern = await Tavern.findById(req.params.id);
     if (!tavern) {
-      return res.status(404).json({ message: "Taberna no encontrada" });
+      return next(createError(404, "Taberna no encontrada"));
     }
 
-    const userIdStr = req.user._id.toString();
+    const userIdStr = req.user.id.toString();
     const isMember = tavern.members.some((id) => id.toString() === userIdStr);
 
     if (isMember) {
-      // Salir de la taberna
       tavern.members = tavern.members.filter(
         (id) => id.toString() !== userIdStr,
       );
     } else {
-      // Unirse a la taberna
-      tavern.members.push(req.user._id);
+      tavern.members.push(req.user.id);
     }
 
     await tavern.save();
 
-    const updatedTavern = await Tavern.findById(tavern._id)
+    const updatedTavern = await Tavern.findById(tavern.id)
       .populate("owner", "username avatar name")
       .populate("members", "username avatar name");
 
-    res.json(updatedTavern);
+    res.status(200).json(updatedTavern);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

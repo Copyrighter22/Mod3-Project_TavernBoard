@@ -1,165 +1,203 @@
 const Post = require("../models/Post");
 const Tavern = require("../models/Tavern");
+const createError = require("http-errors");
 
 // -----------------------------------------------------------------------------
-// @desc    Obtener todas las publicaciones (Feed general)
+// @desc    Obtener todas las publicaciones globales
 // @route   GET /api/posts
 // @access  Público
 // -----------------------------------------------------------------------------
-const getPosts = async (req, res) => {
+const getPosts = async (req, res, next) => {
   try {
     const posts = await Post.find()
       .populate("author", "username avatar name")
+      .populate("tavern", "name image")
       .sort({ createdAt: -1 });
 
-    res.json(posts);
+    res.status(200).json(posts);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // -----------------------------------------------------------------------------
-// @desc    Obtener publicaciones de una taberna concreta
-// @route   GET /api/posts/tavern/:tavernId
-// @access  Público
+// @desc    Obtener publicaciones de las tabernas a las que pertenece el usuario
+// @route   GET /api/posts/my-taverns
+// @access  Privado
 // -----------------------------------------------------------------------------
-const getPostsByTavern = async (req, res) => {
+const getMyTavernsPosts = async (req, res, next) => {
   try {
-    const posts = await Post.find({ tavern: req.params.tavernId })
+    const userId = req.user.id || req.user._id;
+
+    const userTaverns = await Tavern.find({ members: userId }).select("_id");
+    const tavernIds = userTaverns.map((t) => t._id);
+
+    const posts = await Post.find({ tavern: { $in: tavernIds } })
       .populate("author", "username avatar name")
+      .populate("tavern", "name image")
       .sort({ createdAt: -1 });
 
-    res.json(posts);
+    res.status(200).json(posts);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // -----------------------------------------------------------------------------
-// @desc    Crear una publicación
+// @desc    Crear una nueva publicación (imágenes, ubicación y taberna opcionales)
 // @route   POST /api/posts
 // @access  Privado
 // -----------------------------------------------------------------------------
-const createPost = async (req, res) => {
+const createPost = async (req, res, next) => {
+  const { title, content, tavernId, location } = req.body;
+
   try {
-    const { title, content, tavern } = req.body;
+    if (!title || !content) {
+      return next(
+        createError(400, "El título y el contenido son obligatorios"),
+      );
+    }
+
+    // Validar taberna si existe
+    let validTavernId = null;
+    if (
+      tavernId &&
+      tavernId !== "null" &&
+      tavernId !== "undefined" &&
+      String(tavernId).trim() !== ""
+    ) {
+      const tavernExists = await Tavern.findById(tavernId);
+      if (!tavernExists) {
+        return next(createError(404, "La taberna especificada no existe"));
+      }
+      validTavernId = tavernId;
+    }
+
+    // Parsear ubicación si existe
+    let parsedLocation = null;
+    if (location && location !== "null" && location !== "undefined") {
+      try {
+        parsedLocation =
+          typeof location === "string" ? JSON.parse(location) : location;
+      } catch (e) {
+        parsedLocation = null;
+      }
+    }
+
+    // Extraer imágenes subidas por Multer/Cloudinary
+    const imageUrls = req.files ? req.files.map((file) => file.path) : [];
+    const userId = req.user.id || req.user._id;
 
     const newPost = await Post.create({
       title,
       content,
-      author: req.user._id,
-      tavern: tavern || null,
+      author: userId,
+      tavern: validTavernId,
+      location: parsedLocation,
+      images: imageUrls,
     });
 
-    const populatedPost = await Post.findById(newPost._id).populate(
-      "author",
-      "username name",
-    );
+    const populatedPost = await Post.findById(newPost._id)
+      .populate("author", "username avatar name")
+      .populate("tavern", "name image");
 
     res.status(201).json(populatedPost);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error al crear la publicación", error: error.message });
+    next(error);
   }
 };
 
 // -----------------------------------------------------------------------------
-// @desc    Dar o quitar "Me Gusta" de una publicación
-// @route   PUT /api/posts/:id/like
+// @desc    Dar o quitar 'upvote' a una publicación (Toggle)
+// @route   PUT /api/posts/:id/upvote
 // @access  Privado
 // -----------------------------------------------------------------------------
-const toggleLikePost = async (req, res) => {
+const toggleUpvotePost = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params.id);
-    if (!post)
-      return res.status(404).json({ message: "Publicación no encontrada" });
 
-    // Asegurar que el array likes exista en el documento
-    if (!post.upvotes) {
-      post.upvotes = [];
+    if (!post) {
+      return next(createError(404, "Publicación no encontrada"));
     }
 
-    const userIdStr = req.user._id.toString();
-    const index = post.upvotes.findIndex((id) => id.toString() === userIdStr);
+    const userIdStr = (req.user.id || req.user._id).toString();
+    const hasUpvoted = post.upvotes.some((id) => id.toString() === userIdStr);
 
-    if (index === -1) {
-      post.upvotes.push(req.user._id);
+    if (hasUpvoted) {
+      post.upvotes = post.upvotes.filter((id) => id.toString() !== userIdStr);
     } else {
-      post.upvotes.splice(index, 1);
+      post.upvotes.push(req.user.id || req.user._id);
     }
 
     await post.save();
 
-    const updatedPost = await Post.findById(post._id).populate(
-      "author",
-      "username avatar name",
-    );
-    res.json(updatedPost);
+    const updatedPost = await Post.findById(post.id)
+      .populate("author", "username avatar name")
+      .populate("tavern", "name image");
+
+    res.status(200).json(updatedPost);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // -----------------------------------------------------------------------------
-// @desc    Eliminar una publicación
+// @desc    Obtener detalle de una publicación por ID
+// @route   GET /api/posts/:id
+// @access  Público
+// -----------------------------------------------------------------------------
+const getPostById = async (req, res, next) => {
+  try {
+    const post = await Post.findById(req.params.id)
+      .populate("author", "username avatar name")
+      .populate("tavern", "name image");
+
+    if (!post) {
+      return next(createError(404, "Publicación no encontrada"));
+    }
+
+    res.status(200).json(post);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// -----------------------------------------------------------------------------
+// @desc    Eliminar una publicación (solo el autor)
 // @route   DELETE /api/posts/:id
 // @access  Privado
 // -----------------------------------------------------------------------------
-const deletePost = async (req, res) => {
+const deletePost = async (req, res, next) => {
   try {
-    const post = await Post.findById(req.params.id);
-    if (!post)
-      return res.status(404).json({ message: "Publicación no encontrada" });
+    const { id } = req.params;
+    const userId = (req.user.id || req.user._id).toString();
 
-    if (post.author.toString() !== req.user._id.toString()) {
-      return res
-        .status(403)
-        .json({ message: "No tienes permiso para borrar este post" });
+    const post = await Post.findById(id);
+
+    if (!post) {
+      return next(createError(404, "Publicación no encontrada"));
     }
 
-    await post.deleteOne();
-    res.json({
-      message: "Publicación eliminada correctamente",
-      id: req.params.id,
-    });
+    // Comprobar que el usuario logueado sea el autor de la publicación
+    if (post.author.toString() !== userId) {
+      return next(
+        createError(403, "No tienes permiso para eliminar esta publicación"),
+      );
+    }
+
+    await Post.findByIdAndDelete(id);
+
+    res.status(200).json({ message: "Publicación eliminada correctamente" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// -----------------------------------------------------------------------------
-// @desc    Obtener publicaciones de las tabernas a las que se ha unido el usuario
-// @route   GET /api/posts/feed
-// @access  Privado
-// -----------------------------------------------------------------------------
-const getJoinedFeed = async (req, res) => {
-  try {
-    // 1. Obtener las IDs de las tabernas donde el usuario es miembro
-    const userTaverns = await Tavern.find({ members: req.user._id }).select(
-      "_id",
-    );
-    const tavernIds = userTaverns.map((t) => t._id);
-
-    // 2. Buscar publicaciones asociadas a esas tabernas
-    const posts = await Post.find({ tavern: { $in: tavernIds } })
-      .populate("author", "username name")
-      .sort({ createdAt: -1 });
-
-    res.json(posts);
-  } catch (error) {
-    res.status(500).json({
-      message: "Error al obtener el feed personalizado",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
 module.exports = {
   getPosts,
-  getPostsByTavern,
+  getMyTavernsPosts,
+  getPostById,
   createPost,
-  toggleLikePost,
+  toggleUpvotePost,
   deletePost,
-  getJoinedFeed,
 };

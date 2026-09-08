@@ -1,7 +1,11 @@
 const Comment = require("../models/Comment");
 const Post = require("../models/Post");
 
-// Crear un comentario en un post
+// -----------------------------------------------------------------------------
+// @desc    Crear un nuevo comentario en una publicación
+// @route   POST /api/comments/post/:postId
+// @access  Privado
+// -----------------------------------------------------------------------------
 const createComment = async (req, res) => {
   try {
     const { content } = req.body;
@@ -24,9 +28,9 @@ const createComment = async (req, res) => {
       post: postId,
     });
 
-    const populatedComment = await newComment.populate(
+    const populatedComment = await Comment.findById(newComment._id).populate(
       "author",
-      "username name",
+      "username avatar name",
     );
 
     res.status(201).json(populatedComment);
@@ -37,12 +41,16 @@ const createComment = async (req, res) => {
   }
 };
 
-// Obtener comentarios de una publicación
+// -----------------------------------------------------------------------------
+// @desc    Obtener todos los comentarios de una publicación
+// @route   GET /api/comments/post/:postId
+// @access  Público
+// -----------------------------------------------------------------------------
 const getCommentsByPost = async (req, res) => {
   try {
     const { postId } = req.params;
     const comments = await Comment.find({ post: postId })
-      .populate("author", "username name")
+      .populate("author", "username avatar name")
       .sort({ createdAt: -1 });
 
     res.json(comments);
@@ -53,7 +61,11 @@ const getCommentsByPost = async (req, res) => {
   }
 };
 
-// Eliminar un comentario
+// -----------------------------------------------------------------------------
+// @desc    Eliminar un comentario existente (solo el autor)
+// @route   DELETE /api/comments/:commentId
+// @access  Privado
+// -----------------------------------------------------------------------------
 const deleteComment = async (req, res) => {
   try {
     const { commentId } = req.params;
@@ -63,7 +75,10 @@ const deleteComment = async (req, res) => {
       return res.status(404).json({ message: "Comentario no encontrado" });
     }
 
-    if (comment.author.toString() !== req.user._id.toString()) {
+    const userIdStr = req.user._id.toString();
+    const authorIdStr = comment.author.toString();
+
+    if (authorIdStr !== userIdStr) {
       return res.status(403).json({ message: "No autorizado" });
     }
 

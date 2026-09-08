@@ -1,0 +1,32 @@
+/* -----------------------------------------------------------------------------
+   ESTILOS DEL CONTENEDOR PRINCIPAL DE PÁGINA (PAGE LAYOUT)
+----------------------------------------------------------------------------- */
+.page-layout-wrapper {
+  width: 100%;
+  min-height: calc(100vh - 65px); /* Ajusta según la altura real de tu Navbar */
+  background-image: url("https://res.cloudinary.com/kro9urjy/image/upload/v1788806972/wood-2045379_640.jpg");
+  background-repeat: repeat-y;
+  background-size: cover;
+  background-position: center top;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0; /* Sin relleno superior */
+}
+
+.page-layout-content {
+  width: 100%;
+  max-width: 60%;
+  background-color: #dfd0b7;
+  min-height: 100%;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+  margin-top: 0; /* Pega la parte superior al Navbar */
+  padding-top: 1.5rem; /* Espacio INTERNO para que el contenido no choque directamente con el Navbar */
+}
+
+/* Opcional: En pantallas móviles pequeñas, oculta los laterales para ganar espacio */
+@media (max-width: 768px) {
+  .wood-sidebar {
+    display: none;
+  }
+}

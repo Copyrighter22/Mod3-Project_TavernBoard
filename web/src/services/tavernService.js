@@ -1,6 +1,9 @@
+// -----------------------------------------------------------------------------
+// SERVICIOS PARA LA GESTIÓN DE TABERNAS Y MEMBRESÍAS
+// -----------------------------------------------------------------------------
 import API from "./api";
 
-export const getTaverns = async () => {
+export const getAllTaverns = async () => {
   const response = await API.get("/taverns");
   return response.data;
 };

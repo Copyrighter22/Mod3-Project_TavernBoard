@@ -1,4 +1,7 @@
-const mongoose = require('mongoose');
+// -----------------------------------------------------------------------------
+// @desc    Conexión a la base de datos MongoDB mediante Mongoose
+// -----------------------------------------------------------------------------
+const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
@@ -6,6 +9,7 @@ const connectDB = async () => {
     console.log(`🍃 MongoDB conectado: ${conn.connection.host}`);
   } catch (error) {
     console.error(`❌ Error de conexión a MongoDB: ${error.message}`);
+    // Detener la aplicación si falla la conexión crítica
     process.exit(1);
   }
 };

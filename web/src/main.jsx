@@ -1,36 +1,18 @@
+// -----------------------------------------------------------------------------
+// PUNTO DE ENTRADA PRINCIPAL DE REACT
+// -----------------------------------------------------------------------------
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import HomePage from "./pages/HomePage";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ProtectedRoute from "./components/ProtectedRoute";
-import { AuthProvider } from "./context/AuthContext.jsx";
-import TavernsPage from "./pages/TavernPage";
-import TavernDetailPage from "./pages/TavernDetailPage";
-import ProfilePage from "./pages/ProfilePage";
+import App from "./App.jsx";
+
+// Estilos globales de Bootstrap y personalizados
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import "bootstrap-icons/font/bootstrap-icons.css";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <HomePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/taverns" element={<TavernsPage />} />
-          <Route path="/taverns/:id" element={<TavernDetailPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+    <App />
   </React.StrictMode>,
 );

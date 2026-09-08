@@ -1,40 +1,61 @@
-import { useState } from 'react';
-import { AuthContext } from './AuthContext';
-import API from '../services/api';
+// -----------------------------------------------------------------------------
+// CONTEXTO DE AUTENTICACIÓN (AUTH CONTEXT & PROVIDER)
+// -----------------------------------------------------------------------------
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useState } from "react";
 
+export const AuthContext = createContext();
+
+// -----------------------------------------------------------------------------
+// @desc    Función auxiliar para garantizar que la clave 'id' siempre esté presente
+// -----------------------------------------------------------------------------
+const normalizeUser = (userData) => {
+  if (!userData) return null;
+  return {
+    ...userData,
+    id: userData.id || userData._id,
+  };
+};
+
+// -----------------------------------------------------------------------------
+// @desc    Proveedor de estado global para la autenticación del usuario
+// -----------------------------------------------------------------------------
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-    return storedUser && storedToken ? JSON.parse(storedUser) : null;
+    const savedUser = localStorage.getItem("user");
+    if (!savedUser || savedUser === "undefined") return null;
+    try {
+      const parsedUser = JSON.parse(savedUser);
+      return normalizeUser(parsedUser);
+    } catch {
+      return null;
+    }
   });
 
-  const register = async (userData) => {
-    const response = await API.post('/auth/register', userData);
-    const { token, ...userDataResponse } = response.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userDataResponse));
-    setUser(userDataResponse);
-    return response.data;
+  // Guardar datos en localStorage y actualizar el estado normalizado
+  const login = (userData, token) => {
+    const normalizedUser = normalizeUser(userData);
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
   };
 
-  const login = async (credentials) => {
-    const response = await API.post('/auth/login', credentials);
-    const { token, ...userDataResponse } = response.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userDataResponse));
-    setUser(userDataResponse);
-    return response.data;
-  };
-
+  // Limpiar sesión de usuario
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
   };
 
+  // Actualizar datos del usuario actual garantizando el formato de 'id'
+  const updateUser = (updatedData) => {
+    const newUserData = normalizeUser({ ...user, ...updatedData });
+    localStorage.setItem("user", JSON.stringify(newUserData));
+    setUser(newUserData);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, register, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
