@@ -1,24 +1,28 @@
 // -----------------------------------------------------------------------------
-// @desc    Instancia y configuración del Logger centralizado con Pino
+// @desc    Instancia y configuración del Logger centralizado con Pino (Blindado)
 // -----------------------------------------------------------------------------
 const pino = require("pino");
 const config = require("../config/config");
 
-const isDevelopment = config.get("env") === "development";
+let logger;
 
-// Creamos la configuración base limpia sin transportes por defecto
-const loggerOptions = {
-  level: isDevelopment ? "debug" : "info",
-};
+try {
+  const isDevelopment = config.get("env") === "development";
 
-// Solo inyectamos la propiedad 'transport' si estamos estrictamente en desarrollo
-if (isDevelopment) {
-  loggerOptions.transport = {
-    target: "pino-pretty",
-    options: { colorize: true, translateTime: "SYS:standard" },
-  };
+  if (isDevelopment) {
+    logger = pino({
+      level: "debug",
+      transport: {
+        target: "pino-pretty",
+        options: { colorize: true, translateTime: "SYS:standard" },
+      },
+    });
+  } else {
+    logger = pino({ level: "info" });
+  }
+} catch (error) {
+  // Si falla cualquier cosa relacionada con transportes, usamos pino plano seguro
+  logger = pino({ level: "info" });
 }
-
-const logger = pino(loggerOptions);
 
 module.exports = logger;

@@ -89,11 +89,8 @@ app.use("/public", express.static(path.join(__dirname, "public")));
 // -----------------------------------------------------------------------------
 app.use(express.static(path.join(__dirname, "public")));
 
-// Catch-all para React Router (SPA) asegurando que las rutas de /api pasen de largo
-app.get("*", (req, res, next) => {
-  if (req.path.startsWith("/api")) {
-    return next();
-  }
+// Catch-all para React Router (SPA) usando regex compatible para evitar PathError
+app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
@@ -118,7 +115,7 @@ app.use(globalErrorHandler);
 // 6. Arranque del Servidor y Timouts aumentados para subida de imágenes
 // -----------------------------------------------------------------------------
 const PORT = config.get("port");
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   logger.info(
     `Servidor API ejecutándose en el puerto ${PORT} en entorno [${config.get("env")}]`,
   );
