@@ -6,11 +6,12 @@ const config = require("../config/config");
 
 const isDevelopment = config.get("env") === "development";
 
-// Solo configuramos el transport si estamos 100% seguros de que es desarrollo
+// Creamos la configuración base limpia sin transportes por defecto
 const loggerOptions = {
   level: isDevelopment ? "debug" : "info",
 };
 
+// Solo inyectamos la propiedad 'transport' si estamos estrictamente en desarrollo
 if (isDevelopment) {
   loggerOptions.transport = {
     target: "pino-pretty",
