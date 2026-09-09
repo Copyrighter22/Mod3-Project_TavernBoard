@@ -84,11 +84,15 @@ app.use((req, res, next) => {
 app.use(globalErrorHandler);
 
 // -----------------------------------------------------------------------------
-// 6. Arranque del Servidor
+// 6. Arranque del Servidor y Timouts aumentados para subida de imágenes
 // -----------------------------------------------------------------------------
 const PORT = config.get("port");
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(
     `Servidor API ejecutándose en el puerto ${PORT} en entorno [${config.get("env")}]`,
   );
 });
+
+// Ampliar el timeout del servidor a 2 minutos para evitar cortes con Cloudinary
+server.timeout = 120000;
+server.keepAliveTimeout = 120000;

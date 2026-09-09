@@ -84,8 +84,21 @@ const createPost = async (req, res, next) => {
       }
     }
 
-    // Extraer imágenes subidas por Multer/Cloudinary
-    const imageUrls = req.files ? req.files.map((file) => file.path) : [];
+    // Extracción segura de URLs de imágenes proporcionadas por Multer/Cloudinary
+    let imageUrls = [];
+    try {
+      if (req.files && Array.isArray(req.files)) {
+        imageUrls = req.files.map((file) => file.path);
+      } else if (req.file) {
+        imageUrls = [req.file.path];
+      }
+    } catch (uploadErr) {
+      console.error(
+        "Aviso procesando imágenes de Cloudinary:",
+        uploadErr.message,
+      );
+    }
+
     const userId = req.user.id || req.user._id;
 
     const newPost = await Post.create({

@@ -26,6 +26,16 @@ export default function PostCard({
     user &&
     String(post.author?.id || post.author?._id) === String(user.id || user._id);
 
+  // Comprobar si el usuario logueado ha dado like a este post
+  const userId = user?.id || user?._id;
+  const hasLiked =
+    user &&
+    post.upvotes?.some((id) => {
+      const idStr =
+        typeof id === "object" ? String(id._id || id.id) : String(id);
+      return idStr === String(userId);
+    });
+
   useEffect(() => {
     const fetchComments = async () => {
       try {
@@ -152,6 +162,14 @@ export default function PostCard({
       {/* Título */}
       <h5 className="fw-bold mb-1 mt-1 text-dark">{post.title}</h5>
 
+      {/* Ubicación (Si existe) */}
+      {post.location && post.location.name && (
+        <div className="mb-2 text-muted small d-flex align-items-center gap-1">
+          <span>📍</span>
+          <span>{post.location.name}</span>
+        </div>
+      )}
+
       {/* Etiqueta de la Taberna (#b55705) */}
       {post.tavern && (
         <div className="mb-2">
@@ -221,8 +239,14 @@ export default function PostCard({
       <div className="d-flex gap-2 align-items-center mt-1">
         <button
           onClick={handleUpvote}
-          className="btn btn-sm d-flex align-items-center gap-2 px-3 text-white fw-bold rounded-2 border-0"
-          style={{ backgroundColor: "#e63946" }}
+          className={`btn btn-sm d-flex align-items-center gap-2 px-3 fw-bold rounded-2 ${
+            hasLiked ? "text-white border-0" : "text-secondary bg-transparent"
+          }`}
+          style={{
+            backgroundColor: hasLiked ? "#e63946" : "transparent",
+            border: hasLiked ? "none" : "1px solid #707780",
+            color: hasLiked ? "#fff" : "#707780",
+          }}
         >
           <span style={{ fontSize: "1rem" }}>♥</span>
           <span>{post.upvotes?.length || 0}</span>
