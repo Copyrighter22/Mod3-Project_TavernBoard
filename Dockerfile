@@ -1,7 +1,7 @@
 # ==========================================
 # ETAPA 1: Construir el Frontend (/web)
 # ==========================================
-FROM node:18-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app/web
 
@@ -17,7 +17,7 @@ RUN npm run build
 # ==========================================
 # ETAPA 2: Configurar y ejecutar el Backend (/api)
 # ==========================================
-FROM node:18-alpine
+FROM node:22-alpine
 
 WORKDIR /app/api
 
