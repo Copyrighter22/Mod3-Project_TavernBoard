@@ -40,10 +40,28 @@ connectDB();
 // Logger HTTP de peticiones con Pino
 app.use(pinoHttp({ logger }));
 
-// Configuración de CORS habilitado para transmisión de cookies/credenciales
+// Configuración de CORS inteligente según el entorno
+const allowedOrigins = ["http://localhost:5173", "http://localhost:3000"];
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"],
+    origin: (origin, callback) => {
+      // Permitir peticiones sin origen (como Postman o llamadas internas del mismo servidor)
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.indexOf(origin) === -1 &&
+        config.get("env") === "production"
+      ) {
+        // En producción, si se sirve desde el mismo Fly.io, se permite el mismo origen
+        return callback(null, true);
+      }
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        config.get("env") !== "production"
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error("Bloqueado por la política de CORS"));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -67,7 +85,20 @@ app.use("/api/search", searchRoutes);
 app.use("/public", express.static(path.join(__dirname, "public")));
 
 // -----------------------------------------------------------------------------
-// 4. Manejo de Rutas No Encontradas (404)
+// 3.1. Servir el Frontend compilado (Vite) en Producción
+// -----------------------------------------------------------------------------
+app.use(express.static(path.join(__dirname, "public")));
+
+// Catch-all para React Router (SPA) asegurando que las rutas de /api pasen de largo
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api")) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// -----------------------------------------------------------------------------
+// 4. Manejo de Rutas No Encontradas (404 para API)
 // -----------------------------------------------------------------------------
 app.use((req, res, next) => {
   next(
