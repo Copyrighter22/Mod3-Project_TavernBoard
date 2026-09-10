@@ -5,7 +5,7 @@ require("dotenv").config();
 const convict = require("convict");
 
 const config = convict({
-  // --- Entorno y Puerto ---
+  // --- Entorno y Versión ---
   env: {
     doc: "Entorno de ejecución de la aplicación.",
     format: ["production", "development", "test"],
@@ -17,6 +17,12 @@ const config = convict({
     format: "port",
     default: 5000,
     env: "PORT",
+  },
+  apiVersion: {
+    doc: "Versión actual de la API.",
+    format: String,
+    default: "v0",
+    env: "API_VERSION",
   },
 
   // --- Base de Datos y Autenticación ---

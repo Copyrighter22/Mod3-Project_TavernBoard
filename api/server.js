@@ -74,14 +74,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // -----------------------------------------------------------------------------
-// 3. Montaje de Rutas de la API
+// 3. Montaje de Rutas de la API con Prefijo de Versión Dinámico (ej: /api/v0)
 // -----------------------------------------------------------------------------
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/taverns", tavernRoutes);
-app.use("/api/posts", postRoutes);
-app.use("/api/comments", commentRoutes);
-app.use("/api/search", searchRoutes);
+const apiVersion = config.get("apiVersion"); // Obtiene "v0" desde Convict
+const apiPrefix = `/api/${apiVersion}`;
+
+app.use(`${apiPrefix}/auth`, authRoutes);
+app.use(`${apiPrefix}/users`, userRoutes);
+app.use(`${apiPrefix}/taverns`, tavernRoutes);
+app.use(`${apiPrefix}/posts`, postRoutes);
+app.use(`${apiPrefix}/comments`, commentRoutes);
+app.use(`${apiPrefix}/search`, searchRoutes);
 app.use("/public", express.static(path.join(__dirname, "public")));
 
 // -----------------------------------------------------------------------------
@@ -89,7 +92,7 @@ app.use("/public", express.static(path.join(__dirname, "public")));
 // -----------------------------------------------------------------------------
 app.use(express.static(path.join(__dirname, "public")));
 
-// Catch-all para React Router (SPA) usando regex compatible para evitar PathError
+// Catch-all para React Router (SPA) asegurando que cualquier ruta queempiece por /api pase de largo
 app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -117,7 +120,7 @@ app.use(globalErrorHandler);
 const PORT = config.get("port");
 const server = app.listen(PORT, "0.0.0.0", () => {
   logger.info(
-    `Servidor API ejecutándose en el puerto ${PORT} en entorno [${config.get("env")}]`,
+    `Servidor API (${apiVersion}) ejecutándose en el puerto ${PORT} en entorno [${config.get("env")}]`,
   );
 });
 
